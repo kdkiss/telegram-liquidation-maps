@@ -137,42 +137,63 @@ def capture_coinglass_heatmap(symbol="BTC", time_period="24 hour"):
             window.devicePixelRatio = 2;
         """)
         
-        # Select symbol first
-        symbol_selector = "#__next > div:nth-child(2) > div > div.prolayoutBox.MuiBox-root.cg-style-1rr4qq7 > div.prolayout.MuiBox-root.cg-style-0 > div.plr20 > div.MuiBox-root.cg-style-uwwqev > div.dfsb.MuiBox-root.cg-style-0 > div > div > div.MuiAutocomplete-root.MuiAutocomplete-hasPopupIcon.MuiAutocomplete-variantOutlined.MuiAutocomplete-colorNeutral.MuiAutocomplete-sizeMd.font2.cg-style-phfqk"
+        # Wait for page to load
+        time.sleep(5)
         
-        try:
-            # Use JavaScript to directly set the symbol and trigger updates
-            driver.execute_script(f"""
-                var input = document.querySelector('{symbol_selector} input');
-                if (input) {{
-                    input.value = '{symbol}';
-                    input.focus();
-                    
-                    var inputEvent = new Event('input', {{ bubbles: true, cancelable: true }});
-                    var changeEvent = new Event('change', {{ bubbles: true, cancelable: true }});
-                    var focusEvent = new Event('focus', {{ bubbles: true, cancelable: true }});
-                    var blurEvent = new Event('blur', {{ bubbles: true, cancelable: true }});
-                    
-                    input.dispatchEvent(focusEvent);
-                    input.dispatchEvent(inputEvent);
-                    input.dispatchEvent(changeEvent);
-                    
-                    setTimeout(function() {{
-                        input.dispatchEvent(blurEvent);
-                    }}, 500);
-                }}
-            """)
-            time.sleep(3)
-            
-            # Verify the symbol was actually set
-            current_value = driver.execute_script(f"return document.querySelector('{symbol_selector} input').value;")
-            logger.info(f"Symbol input value after setting: {current_value}")
-            
-            # Wait for chart to update with new symbol data
-            time.sleep(5)
-            logger.info(f"Set symbol to: {symbol}")
-        except Exception as symbol_e:
-            logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
+        # Use JavaScript to force symbol change
+        if symbol != "BTC":
+            try:
+                # Click Symbol tab first
+                symbol_tab = wait.until(EC.element_to_be_clickable((By.XPATH, "//button[@role='tab' and contains(text(), 'Symbol')]")))
+                symbol_tab.click()
+                time.sleep(2)
+                logger.info("Clicked Symbol tab")
+                
+                # Use aggressive JavaScript to change the symbol
+                driver.execute_script(f"""
+                    // Find input and set value
+                    var input = document.querySelector('input.MuiAutocomplete-input');
+                    if (input) {{
+                        input.value = '{symbol}';
+                        input.focus();
+                        
+                        // Trigger all possible events
+                        ['focus', 'input', 'change', 'keydown', 'keyup', 'blur'].forEach(function(eventType) {{
+                            var event = new Event(eventType, {{ bubbles: true, cancelable: true }});
+                            if (eventType === 'keydown' || eventType === 'keyup') {{
+                                event.key = 'Enter';
+                                event.keyCode = 13;
+                            }}
+                            input.dispatchEvent(event);
+                        }});
+                        
+                        // Force a form submission if there's a form
+                        var form = input.closest('form');
+                        if (form) {{
+                            form.dispatchEvent(new Event('submit', {{ bubbles: true, cancelable: true }}));
+                        }}
+                        
+                        // Try to trigger React state update
+                        var reactKey = Object.keys(input).find(key => key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber'));
+                        if (reactKey) {{
+                            var reactInstance = input[reactKey];
+                            if (reactInstance && reactInstance.memoizedProps && reactInstance.memoizedProps.onChange) {{
+                                reactInstance.memoizedProps.onChange({{ target: {{ value: '{symbol}' }} }});
+                            }}
+                        }}
+                    }}
+                """)
+                
+                time.sleep(3)
+                logger.info(f"Used JavaScript to set symbol to {symbol}")
+                
+                # Wait longer for any async updates
+                time.sleep(10)
+                
+            except Exception as symbol_e:
+                logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
+        else:
+            logger.info("Using default BTC symbol")
         
         # Find and click the time period dropdown button
         time_dropdown = wait.until(EC.element_to_be_clickable((
@@ -244,67 +265,6 @@ def capture_coinglass_heatmap(symbol="BTC", time_period="24 hour"):
     finally:
         if driver:
             driver.quit()
-
-@bot.message_handler(commands=['map'])
-def handle_map_command(message):
-    """Handle /map command with symbol and timeframe"""
-    try:
-        parts = message.text.split()
-        
-        if len(parts) < 2:
-            bot.reply_to(message, "Usage: /map <SYMBOL> [TIMEFRAME]\nExample: /map BTC 24 hour")
-            return
-        
-        symbol = parts[1].upper()
-        timeframe = " ".join(parts[2:]) if len(parts) > 2 else "24 hour"
-        
-        valid_timeframes = ["12 hour", "24 hour", "1 month", "3 month"]
-        if timeframe not in valid_timeframes:
-            bot.reply_to(message, f"Invalid timeframe. Use: {', '.join(valid_timeframes)}")
-            return
-        
-        bot.reply_to(message, f"Capturing {symbol} liquidation heatmap ({timeframe})...")
-        
-        image_path = capture_coinglass_heatmap(symbol, timeframe)
-        
-        if image_path and os.path.exists(image_path):
-            price = get_crypto_price(symbol)
-            caption = f"{symbol} Liquidation Heatmap - {timeframe}"
-            if price:
-                caption += f"\n💰 {symbol} Price: {price}"
-            
-            with open(image_path, 'rb') as photo:
-                bot.send_photo(message.chat.id, photo, caption=caption)
-            os.remove(image_path)
-        else:
-            bot.reply_to(message, "Failed to capture heatmap. Please try again.")
-            
-    except Exception as e:
-        logger.error(f"Error in map command: {e}")
-        bot.reply_to(message, "An error occurred while processing your request.")
-
-@bot.message_handler(commands=['start', 'help'])
-def handle_help(message):
-    """Handle help commands"""
-    help_text = """
-🔥 Liquidation Heatmap Bot
-
-Commands:
-/map <SYMBOL> [TIMEFRAME] - Get liquidation heatmap
-
-Examples:
-/map BTC
-/map ETH 12 hour
-/map BTC 24 hour
-/map ETH 1 month
-
-Supported timeframes: 12 hour, 24 hour, 1 month, 3 month
-    """
-    bot.reply_to(message, help_text)
-
-if __name__ == "__main__":
-    logger.info("Starting Liquidation Heatmap Bot...")
-    bot.infinity_polling()
 
 @bot.message_handler(commands=['map'])
 def handle_map_command(message):

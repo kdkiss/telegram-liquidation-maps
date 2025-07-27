@@ -87,7 +87,3 @@ docker-compose logs bot
 - [Coinglass](https://www.coinglass.com) for providing the liquidation data
 - [Selenium](https://www.selenium.dev/) for web automation capabilities
 - [python-telegram-bot](https://python-telegram-bot.org/) for Telegram integration
-
-# telegram-liquidation-maps
-
-
