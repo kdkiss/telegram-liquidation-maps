@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Bitcoin Liquidation Heatmap Bot
 
 A Telegram bot that automatically captures and posts Bitcoin liquidation heatmaps from Coinglass to a specified Telegram channel.
@@ -88,6 +89,9 @@ docker-compose logs bot
 - [Coinglass](https://www.coinglass.com) for providing the liquidation data
 - [Selenium](https://www.selenium.dev/) for web automation capabilities
 - [python-telegram-bot](https://python-telegram-bot.org/) for Telegram integration
+=======
+# telegram-liquidation-maps
+>>>>>>> c72a6911705a7e90027a7dd8acbb501a2ec2a5f7
 =======
 # telegram-liquidation-maps
 >>>>>>> c72a6911705a7e90027a7dd8acbb501a2ec2a5f7
