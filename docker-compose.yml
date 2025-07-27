@@ -15,6 +15,8 @@ services:
     env_file:
       - .env
     environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
       - SELENIUM_HOST=selenium
       - SELENIUM_PORT=4444
       - TZ=Europe/Berlin
