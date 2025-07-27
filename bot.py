@@ -149,46 +149,38 @@ def capture_coinglass_heatmap(symbol="BTC", time_period="24 hour"):
                 time.sleep(2)
                 logger.info("Clicked Symbol tab")
                 
-                # Use aggressive JavaScript to change the symbol
-                driver.execute_script(f"""
-                    // Find input and set value
-                    var input = document.querySelector('input.MuiAutocomplete-input');
-                    if (input) {{
-                        input.value = '{symbol}';
-                        input.focus();
-                        
-                        // Trigger all possible events
-                        ['focus', 'input', 'change', 'keydown', 'keyup', 'blur'].forEach(function(eventType) {{
-                            var event = new Event(eventType, {{ bubbles: true, cancelable: true }});
-                            if (eventType === 'keydown' || eventType === 'keyup') {{
-                                event.key = 'Enter';
-                                event.keyCode = 13;
-                            }}
-                            input.dispatchEvent(event);
-                        }});
-                        
-                        // Force a form submission if there's a form
-                        var form = input.closest('form');
-                        if (form) {{
-                            form.dispatchEvent(new Event('submit', {{ bubbles: true, cancelable: true }}));
-                        }}
-                        
-                        // Try to trigger React state update
-                        var reactKey = Object.keys(input).find(key => key.startsWith('__reactInternalInstance') || key.startsWith('__reactFiber'));
-                        if (reactKey) {{
-                            var reactInstance = input[reactKey];
-                            if (reactInstance && reactInstance.memoizedProps && reactInstance.memoizedProps.onChange) {{
-                                reactInstance.memoizedProps.onChange({{ target: {{ value: '{symbol}' }} }});
-                            }}
-                        }}
-                    }}
-                """)
+                # Use actual user simulation instead of JavaScript
+                from selenium.webdriver.common.action_chains import ActionChains
                 
-                time.sleep(3)
-                logger.info(f"Used JavaScript to set symbol to {symbol}")
+                # Find the input element
+                input_element = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "input.MuiAutocomplete-input")))
                 
-                # Wait longer for any async updates
-                time.sleep(10)
+                # Clear the input by selecting all and typing
+                actions = ActionChains(driver)
+                actions.click(input_element)
+                actions.key_down(Keys.CONTROL).send_keys('a').key_up(Keys.CONTROL)
+                actions.send_keys(symbol)
+                actions.perform()
+                
+                time.sleep(2)
+                logger.info(f"Typed {symbol} into input field")
+                
+                # Try to click on dropdown option or press Enter
+                try:
+                    # Wait for dropdown to appear and click option
+                    option = wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option' and text()='{symbol}']")))
+                    option.click()
+                    logger.info(f"Clicked {symbol} option from dropdown")
+                except:
+                    # Fallback: press Enter
+                    actions = ActionChains(driver)
+                    actions.send_keys(Keys.ENTER)
+                    actions.perform()
+                    logger.info(f"Pressed Enter to select {symbol}")
+                
+                # Wait for chart to update
+                time.sleep(15)
+                logger.info(f"Waited for chart to update with {symbol} data")
                 
             except Exception as symbol_e:
                 logger.warning(f"Could not select symbol {symbol}: {symbol_e}")
@@ -278,6 +270,8 @@ def handle_map_command(message):
         
         symbol = parts[1].upper()
         timeframe = " ".join(parts[2:]) if len(parts) > 2 else "24 hour"
+        
+
         
         valid_timeframes = ["12 hour", "24 hour", "1 month", "3 month"]
         if timeframe not in valid_timeframes:
