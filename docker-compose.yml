@@ -12,8 +12,6 @@ services:
     build: .
     depends_on:
       - selenium
-    env_file:
-      - .env
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_CHANNEL_ID=${TELEGRAM_CHANNEL_ID}
