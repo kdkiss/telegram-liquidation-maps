@@ -1,0 +1,23 @@
+version: "3"
+
+services:
+  selenium:
+    image: seleniarm/standalone-chromium:latest
+    shm_size: 2gb
+    ports:
+      - "4444:4444"
+    restart: always
+
+  bot:
+    build: .
+    depends_on:
+      - selenium
+    env_file:
+      - .env
+    environment:
+      - SELENIUM_HOST=selenium
+      - SELENIUM_PORT=4444
+      - TZ=Europe/Berlin
+    restart: always
+    volumes:
+      - ./logs:/app/logs
