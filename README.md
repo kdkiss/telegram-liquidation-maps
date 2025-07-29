@@ -1,196 +1,194 @@
-# Liquidation Heatmap Bot
+# Ultra-Lightweight MCP Server
+[![smithery badge](https://smithery.ai/badge/@kdkiss/ultra-lightweight-mcp)](https://smithery.ai/server/@kdkiss/ultra-lightweight-mcp)
 
-A Telegram bot that captures cryptocurrency liquidation heatmaps from Coinglass and delivers them on demand with real-time price information.
+An ultra-lightweight MCP (Model Context Protocol) server designed for Smithery deployment with Playwright browser automation capabilities. This server provides fast startup (<5 seconds) and minimal resource usage while offering comprehensive browser automation tools.
 
 ## Features
 
-- 📊 **Real-time Heatmaps**: Captures liquidation heatmaps for any supported cryptocurrency
-- 💰 **Price Integration**: Shows current cryptocurrency prices alongside heatmaps
-- ⏰ **Multiple Timeframes**: Supports 12 hour, 24 hour, 1 month, and 3 month views
-- 🤖 **Easy Commands**: Simple Telegram commands for instant access
-- 🔄 **Automated Symbol Selection**: Dynamically switches between different cryptocurrencies
+- **Ultra-lightweight**: Minimal dependencies, fast startup
+- **Smithery compatible**: Stdio transport with proper configuration
+- **Browser automation**: Full Playwright integration
+- **TypeScript**: Clean, type-safe implementation
+- **Health checks**: Built-in monitoring capabilities
+- **Graceful shutdown**: Proper resource cleanup
 
-## Supported Cryptocurrencies
+## Tools Available
 
-- Bitcoin (BTC)
-- Ethereum (ETH)
-- Binance Coin (BNB)
-- Cardano (ADA)
-- Solana (SOL)
-- Ripple (XRP)
-- Polkadot (DOT)
-- Dogecoin (DOGE)
-- Avalanche (AVAX)
-- Polygon (MATIC)
+1. **navigate_to_url** - Navigate to any URL and return page information
+2. **take_screenshot** - Capture screenshots of pages or specific elements
+3. **click_element** - Click elements on the page
+4. **fill_form** - Fill form fields with specified values
+5. **extract_text** - Extract text content from pages
 
-## Commands
+## Quick Start
 
-| Command | Description | Example |
-|---------|-------------|---------|
-| `/map <SYMBOL> [TIMEFRAME]` | Get liquidation heatmap | `/map ETH 12 hour` |
-| `/start` or `/help` | Show help information | `/help` |
+### Installing via Smithery
 
-### Supported Timeframes
-- `12 hour`
-- `24 hour` (default)
-- `1 month`
-- `3 month`
+To install Ultra-Lightweight MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@kdkiss/ultra-lightweight-mcp):
 
-## Setup
+```bash
+npx -y @smithery/cli install @kdkiss/ultra-lightweight-mcp --client claude
+```
 
-### Prerequisites
+### Smithery Deployment
 
-- Docker and Docker Compose
-- Telegram Bot Token
-- Telegram Channel ID (optional)
+The server is ready for Smithery deployment with the provided `smithery.yaml` configuration.
+
+### Local Development
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Build the server**:
+   ```bash
+   npm run build
+   ```
+
+3. **Start the server**:
+   ```bash
+   npm start
+   ```
+
+4. **Development mode** (with hot reload):
+   ```bash
+   npm run dev
+   ```
+
+### Docker Usage
+
+```bash
+# Build the image
+docker build -t ultra-lightweight-mcp .
+
+# Run the container
+docker run -i ultra-lightweight-mcp
+```
+
+## Configuration
 
 ### Environment Variables
 
-Create a `.env` file in the project root:
+- `NODE_ENV`: Set to 'production' for production deployments
+- `DEBUG`: Enable debug logging when needed
 
-```env
-TELEGRAM_BOT_TOKEN=your_bot_token_here
-TELEGRAM_CHANNEL_ID=your_channel_id_here
-SELENIUM_HOST=selenium
-SELENIUM_PORT=4444
-```
+### Smithery Configuration
 
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd liquidation_map_bot
-```
-
-2. Create the `.env` file with your configuration
-
-3. Start the services:
-```bash
-docker-compose up -d
-```
-
-**Note**: If you're using an ARM-based device (Apple Silicon Mac, Raspberry Pi, etc.), make sure to use the ARM-specific docker-compose.yml configuration shown above with `seleniarm/standalone-chromium:latest` instead of the standard selenium image.
-
-## Docker Configuration
-
-The project uses Docker Compose with two services:
-
-- **selenium**: Headless Chrome browser for web scraping
-- **bot**: Python application running the Telegram bot
-
-### docker-compose.yml
-
-**For x86/x64 systems:**
-```yaml
-version: '3.8'
-services:
-  selenium:
-    image: selenium/standalone-chrome:latest
-    ports:
-      - "4444:4444"
-      - "7900:7900"
-    environment:
-      - SE_NODE_SESSION_TIMEOUT=300
-      - SE_NODE_MAX_SESSIONS=1
-    volumes:
-      - /dev/shm:/dev/shm
-
-  bot:
-    build: .
-    depends_on:
-      - selenium
-    env_file:
-      - .env
-    volumes:
-      - ./logs:/app/logs
-    restart: unless-stopped
-```
-
-**For ARM devices (Apple Silicon, Raspberry Pi, etc.):**
-```yaml
-version: '3.8'
-services:
-  selenium:
-    image: seleniarm/standalone-chromium:latest
-    shm_size: 2gb
-    ports:
-      - "4444:4444"
-    restart: always
-
-  bot:
-    build: .
-    depends_on:
-      - selenium
-    env_file:
-      - .env
-    environment:
-      - SELENIUM_HOST=selenium
-      - SELENIUM_PORT=4444
-    volumes:
-      - ./logs:/app/logs
-    restart: unless-stopped
-```
+The `smithery.yaml` file contains all necessary configuration for Smithery deployment including:
+- Resource limits (512Mi memory, 500m CPU)
+- Health check endpoints
+- Logging configuration
+- Environment setup
 
 ## Usage Examples
 
+### Navigate to a URL
+```json
+{
+  "tool": "navigate_to_url",
+  "arguments": {
+    "url": "https://example.com",
+    "waitFor": "body"
+  }
+}
 ```
-/map BTC                    # BTC heatmap (24 hour default)
-/map ETH 12 hour           # ETH heatmap for 12 hours
-/map BTC 1 month           # BTC heatmap for 1 month
-/map DOGE 3 month          # DOGE heatmap for 3 months
+
+### Take a Screenshot
+```json
+{
+  "tool": "take_screenshot",
+  "arguments": {
+    "fullPage": true
+  }
+}
 ```
 
-## Technical Details
+### Click an Element
+```json
+{
+  "tool": "click_element",
+  "arguments": {
+    "selector": "button[type='submit']"
+  }
+}
+```
 
-### Architecture
-- **Web Scraping**: Selenium WebDriver with Chrome headless
-- **Image Processing**: PIL for screenshot optimization
-- **API Integration**: CoinGecko API for real-time prices
-- **Bot Framework**: pyTelegramBotAPI
+### Fill a Form
+```json
+{
+  "tool": "fill_form",
+  "arguments": {
+    "selector": "input[name='email']",
+    "value": "user@example.com"
+  }
+}
+```
 
-### Key Components
-- `capture_coinglass_heatmap()`: Main scraping function with symbol selection
-- `get_crypto_price()`: Fetches current cryptocurrency prices
-- `handle_map_command()`: Processes Telegram commands
-- Automated symbol switching using ActionChains for realistic user simulation
+### Extract Text
+```json
+{
+  "tool": "extract_text",
+  "arguments": {
+    "selector": ".content"
+  }
+}
+```
 
-### Screenshot Process
-1. Navigate to Coinglass liquidation heatmap page
-2. Select Symbol tab and input desired cryptocurrency
-3. Set timeframe via dropdown selection
-4. Capture chart area using Chrome DevTools Protocol
-5. Process and optimize image for Telegram delivery
+## Performance
 
-## Logging
+- **Startup time**: <5 seconds
+- **Memory usage**: <512Mi
+- **CPU usage**: <500m
+- **Dependencies**: Only 2 (MCP SDK + Playwright)
 
-Logs are stored in `./logs/bot.log` and include:
-- Connection status to Selenium
-- Symbol selection attempts
-- Screenshot capture results
-- Error handling and debugging information
+## Development
+
+### Project Structure
+```
+ultra-lightweight-mcp-server/
+├── src/
+│   └── index.ts          # Main server implementation
+├── dist/                 # Compiled JavaScript
+├── package.json          # Dependencies and scripts
+├── tsconfig.json         # TypeScript configuration
+├── smithery.yaml         # Smithery deployment config
+└── README.md            # This file
+```
+
+### Building from Source
+
+1. Clone or create the project structure
+2. Install dependencies: `npm install`
+3. Build: `npm run build`
+4. Test: `npm start`
+
+### Testing
+
+The server can be tested using any MCP client or directly via stdio. For testing:
+
+```bash
+# Start the server
+npm start
+
+# In another terminal, test with curl or MCP client
+echo '{"type":"list_tools"}' | node dist/index.js
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Bot not responding**: Check if Selenium container is running
-```bash
-docker-compose logs selenium
-```
-
-**Symbol selection fails**: Verify the website structure hasn't changed
-```bash
-docker-compose logs bot
-```
-
-**Image quality issues**: Adjust window size in `setup_webdriver()` function
+1. **Browser not starting**: Ensure Playwright dependencies are installed
+2. **Memory issues**: Check resource limits in smithery.yaml
+3. **Timeout errors**: Increase wait timeouts in tool calls
+4. **Permission errors**: Ensure proper file permissions
 
 ### Debug Mode
 
-Enable debug logging by modifying the logging level in `bot.py`:
-```python
-logging.basicConfig(level=logging.DEBUG, ...)
+Enable debug logging:
+```bash
+DEBUG=* npm start
 ```
 
 ## Contributing
@@ -198,13 +196,13 @@ logging.basicConfig(level=logging.DEBUG, ...)
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test with different cryptocurrencies and timeframes
+4. Test thoroughly
 5. Submit a pull request
 
 ## License
 
-This project is for educational purposes. Please respect Coinglass's terms of service and rate limits.
+MIT License - see LICENSE file for details
 
-## Disclaimer
+## Support
 
-This bot is for informational purposes only. Cryptocurrency trading involves substantial risk. Always do your own research before making investment decisions.
+For issues and questions, please open an issue on the repository or contact the maintainers.
